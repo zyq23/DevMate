@@ -126,27 +126,6 @@ npm run dev
 - API 文档：<http://localhost:8000/docs>
 - 前端：<http://localhost:3000>
 
-## 端口冲突处理（不改源码）
-
-宿主机上已有服务占用了默认端口时，不必改 `docker-compose.yml`，追加一个 `docker-compose.override.yml` 只调整端口映射，再在 `.env` 里同步修改连接地址即可（示例：本机 5432 / 9000 / 9001 已被其他容器占用，3000 被宿主机进程占用）：
-
-```yaml
-# docker-compose.override.yml
-services:
-  postgres:
-    ports: ["15432:5432"]
-  minio:
-    ports: ["19000:9000", "19001:9001"]
-```
-
-```bash
-# .env 中同步修改
-DATABASE_URL=postgresql+psycopg://devflow:devflow@localhost:15432/devflow
-```
-
-- MinIO 对外端口可以随意改：Milvus 在容器网络内部通过 `minio:9000` 访问，不受影响。
-- 前端换端口：`npm run dev -- -p 3001`。CORS 白名单已包含 3001/3002；开发模式下后端还会放行任意 `localhost:*` 来源。
-
 ## 关键配置（`.env`）
 
 | 变量 | 说明 |
@@ -281,7 +260,7 @@ docker-compose.yml     # postgres + etcd + minio + milvus（redis 为 optional p
 | 现象 | 原因与处理 |
 | --- | --- |
 | `pip install` 报依赖版本错误 | Python 低于 3.10。用 conda/pyenv 建 3.10+ 环境再安装 |
-| 容器启动报端口被占用 | 见上文"端口冲突处理"，用 override 文件改映射 |
+| 容器启动报端口被占用 | 修改 `docker-compose.yml` 或使用 `docker-compose.override.yml` 调整端口映射，并在 `.env` 中同步更新连接地址 |
 | 镜像拉取超时 | 配置镜像加速，或用代理前缀拉取后重新打 tag，例如 `docker pull docker.m.daocloud.io/milvusdb/milvus:v2.5.4` |
 | RAG 接口返回 503 `degraded` | Milvus 未启动或未就绪；启动基础设施后重试，其余功能不受影响 |
 | 启动时 Embedding 报错 | 默认本地模型需要 `pip install -r requirements-local-embedding.txt`；或改配 `EMBEDDING_API_KEY` 走云端。系统不会静默切换到另一套向量空间 |
